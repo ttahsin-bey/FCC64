@@ -1,0 +1,181 @@
+Name            FCC-CPLD;
+Partno          FCC001;
+Revision        01;
+Date            06/30/17;
+Designer        Freak;
+Company         None;
+Location        None;
+Assembly        None;
+Device          f1504isptqfp100;
+
+/****************************************************************/
+/*                                                              */
+/*      Logik fuer die "Final Chess Card"                       */
+/*                                                              */
+/****************************************************************/
+
+PROPERTY ATMEL {PREASSIGN = KEEP};
+PROPERTY ATMEL {PIN_KEEP = OFF};
+PROPERTY ATMEL {OUTPUT_FAST = OFF};
+PROPERTY ATMEL {JTAG = ON};
+PROPERTY ATMEL {TDI_PULLUP = OFF};
+PROPERTY ATMEL {TMS_PULLUP = OFF};
+
+
+/*
+ * Definition der Eingaenge ins CPLD
+ */
+
+/* FCC Eingaenge */
+
+Pin [100,99,98,97,96,94,93,92] = [intA8..15];
+
+Pin 40  = RAM_Size;
+
+Pin 85  = intPhi2;
+Pin 10  = !intWrite;
+
+/* C64 Eingaenge */
+
+Pin 23  = !Reset;
+
+Pin 21  = !IO1;
+Pin 19  = !IO2;
+Pin 25  = !RomH;
+Pin 48  = !RomL;
+Pin 87  = Phi2;
+Pin 90  = DotClk;
+Pin 41  = !Write;
+Pin 42  = FCC_On;
+
+/* Bidirektionaler Transfer-Port */
+
+Pin [60,63,65,64,61,58,57,56] = [Port_A0..7];
+Pin [29,30,31,32,33,35,36,37] = [Port_B0..7];
+
+
+/*
+ * Definition der Ausgaenge des CPLD
+ */
+
+/* C64 Ausgaenge */
+
+Pin 47  = !FCC_Enable;
+Pin 52  = ROM1_Bank;
+Pin 54  = !ROM1_CE;
+Pin 45  = !Rdy_PortB;
+
+/* FCC Ausgaenge */
+
+Pin 80  = !ROM2_CE;
+Pin 79  = !RAM_CE;
+Pin 81  = !MEM_OE;
+Pin 83  = !MEM_WE;
+Pin 16  = !intNMI;
+
+Pin 14  = Dummy;   /* Test-Pin */
+
+
+NODE  Conf_Clk_En;
+
+NODE  IO1_good;
+NODE  IO2_good;
+
+NODE  PortADDR;
+
+/*
+ * Logik
+ */
+
+FIELD intADDR = [intA15..intA8];
+PortADDR = intADDR:[7Fxx];
+
+/* Signalaufbereitung */
+
+NODE  DelayIO1A;
+NODE  DelayIO1B;
+DelayIO1A.d      = IO1;
+DelayIO1A.ck     = DotClk;
+DelayIO1B.d      = DelayIO1A;
+DelayIO1B.ck     = DotClk;
+IO1_good         = DelayIO1A & DelayIO1B & IO1;
+
+
+NODE  DelayIO2A;
+NODE  DelayIO2B;
+DelayIO2A.d      = IO2;
+DelayIO2A.ck     = DotClk;
+DelayIO2B.d      = DelayIO2A;
+DelayIO2B.ck     = DotClk;
+IO2_good         = DelayIO2A & DelayIO2B & IO2;
+
+
+/* Ansteuerung des ROM1 (C64-ROM) */
+
+ROM1_CE = FCC_Enable & (RomH # RomL);
+
+
+/* Ansteuerung des ROM2 (FCC-ROM) */
+
+ROM2_CE = intADDR:[8000..FFFF];
+
+
+/* Ansteuerung des RAMs */
+
+RAM_CE  = intADDR:[0000..1FFF] &  RAM_Size
+        # intADDR:[0000..7EFF] & !RAM_Size;
+
+
+/* FCC-interner Speicherzugriff: Lesen */
+
+MEM_OE  = !intWrite;
+
+
+/* FCC-interner Speicherzugriff: Schreiben */
+
+MEM_WE  = intWrite & intPhi2;
+
+
+/* NMI-Request fuer FCC-interne CPU */
+
+intNMI.ar      = Reset
+               # PortADDR & !intWrite & intPhi2;
+intNMI.ap      = IO2_good & Write & Phi2;
+intNMI.d       = intNMI;
+intNMI.ck      = 'b'0;
+
+
+/* NMI-Request fuer C64 */
+
+Rdy_PortB.ar   = Reset
+               # IO2_good & !Write & Phi2;
+Rdy_PortB.ap   = PortADDR & intWrite & intPhi2;
+Rdy_PortB.d    = Rdy_PortB;
+Rdy_PortB.ck   = 'b'0;
+
+
+/* Konfiguration-Register */
+
+ROM1_Bank.ar   = Reset;
+ROM1_Bank.d    = Port_A0.io;
+ROM1_Bank.ck   = Conf_Clk_En & IO1_good & Write & Phi2;
+
+FCC_Enable.ar  = !FCC_On;
+FCC_Enable.ap  = Reset & FCC_On;
+FCC_Enable.d   = Port_A1.io;
+FCC_Enable.ck  = Conf_Clk_En & IO1_good & Write & Phi2;
+
+Conf_Clk_En.ap = Reset;
+Conf_Clk_En.d  = !Port_A2.io;
+Conf_Clk_En.ck = Conf_Clk_En & IO1_good & Write & Phi2;
+
+
+/* Transfer-Ports */
+
+[Port_A0..7].d   = [Port_B0..7].io;
+[Port_A0..7].ck  = IO2_good & Write & Phi2;
+[Port_A0..7].oe  = PortADDR & !intWrite & intPhi2;
+
+[Port_B0..7].d   = [Port_A0..7].io;
+[Port_B0..7].ck  = PortADDR & intWrite & intPhi2;
+[Port_B0..7].oe  = IO2_good & !Write;

@@ -40,17 +40,20 @@ Pin 40  = RAM_Size;
 Pin 85  = intPhi2;
 Pin 10  = !intWrite;
 
+NODE nIntWrite;
+nIntWrite = !intWrite;
+
 /* C64 Eingaenge */
 
 Pin 23  = !Reset;
 
-Pin 21  = !IO1;
-Pin 19  = !IO2;
-Pin 25  = !RomH;
-Pin 48  = !RomL;
+Pin 21  = nIO1;
+Pin 19  = nIO2;
+Pin 25  = nRomH;
+Pin 48  = nRomL;
 Pin 87  = Phi2;
 Pin 90  = DotClk;
-Pin 41  = !Write;
+Pin 41  = nWrite;
 Pin 42  = FCC_On;
 
 /* Bidirektionaler Transfer-Port */
@@ -82,8 +85,6 @@ Pin 16  = !intNMI;
 
 NODE  Conf_Clk_En;
 Pin 14 = Dummy; /* Test-Pin */
-NODE  IO1_good;
-NODE  IO2_good;
 
 NODE  PortADDR;
 
@@ -95,36 +96,32 @@ FIELD intADDR = [intA15..intA8];
 
 PortADDR = intADDR:[7Fxx];
 
-NODE Read;
-Read             = !Write;
-
-NODE intRead;
-intRead          = !intWrite;
-
 
 /* Signalaufbereitung */
 
-NODE  IO1_DelA;
-NODE  IO1_DelB;
-IO1_DelA.d       = IO1;
-IO1_DelA.ck      = DotClk;
-IO1_DelB.d       = IO1_DelA;
-IO1_DelB.ck      = DotClk;
-IO1_good         = IO1 & IO1_DelA & IO1_DelB;
+NODE  nIO1_DelA;
+NODE  nIO1_DelB;
+NODE  nIO1_good;
+nIO1_DelA.d       = nIO1;
+nIO1_DelA.ck      = DotClk;
+nIO1_DelB.d       = nIO1_DelA;
+nIO1_DelB.ck      = DotClk;
+nIO1_good         = (nIO1 # nIO1_DelA # nIO1_DelB);
 
 
-NODE  IO2_DelA;
-NODE  IO2_DelB;
-IO2_DelA.d       = IO2;
-IO2_DelA.ck      = DotClk;
-IO2_DelB.d       = IO2_DelA;
-IO2_DelB.ck      = DotClk;
-IO2_good         = IO2 & IO2_DelA & IO2_DelB;
+NODE  nIO2_DelA;
+NODE  nIO2_DelB;
+NODE  nIO2_good;
+nIO2_DelA.d       = nIO2;
+nIO2_DelA.ck      = DotClk;
+nIO2_DelB.d       = nIO2_DelA;
+nIO2_DelB.ck      = DotClk;
+nIO2_good         = (nIO2 # nIO2_DelA # nIO2_DelB);
 
 
 /* Ansteuerung des ROM1 (C64-ROM) */
 
-ROM1_CE = FCC_Enable & (RomH # RomL);
+ROM1_CE = FCC_Enable & !(nRomH & nRomL);
 
 /* Ansteuerung des ROM2 (FCC-ROM) */
 
@@ -139,7 +136,7 @@ RAM_SEL = intADDR:[0000..1FFF] &  RAM_Size
 
 /* FCC-interner Speicherzugriff: Lesen */
 
-MEM_OE  = intRead & intPhi2;
+MEM_OE  = !intWrite & intPhi2;
 
 /* FCC-interner Speicherzugriff: Schreiben */
 
@@ -149,44 +146,43 @@ MEM_WE  = intWrite & intPhi2;
 /* NMI-Request fuer FCC-interne CPU */
 
 intNMI.ar      = Reset;
-intNMI.ap      = IO2_good & Write & Phi2;
+intNMI.ap      = (!nIO2_good & !nWrite & Phi2);
 intNMI.d       = 'b'0;
-intNMI.ck      = PortADDR & intRead & intPhi2;
-
+intNMI.ck      = PortADDR & !intWrite & intPhi2;
 
 /* NMI-Request fuer C64 */
 
 Rdy_PortA.ar   = Reset;
 Rdy_PortA.ap   = PortADDR & intWrite & intPhi2;
 Rdy_PortA.d    = 'b'0;
-Rdy_PortA.ck   = IO2_good & Read & Phi2;
+Rdy_PortA.ck   = nIO2_good # (!nWrite & Phi2);
+
 
 
 /* Konfiguration-Register */
 
 ROM1_Bank.ar   = Reset;
 ROM1_Bank.d    = Port_A0.io;
-ROM1_Bank.ck   = Conf_Clk_En & IO1_good & Write & Phi2;
+ROM1_Bank.ck   = (Conf_Clk_En # nIO1_good # (nWrite & Phi2));
 
 FCC_Enable.ap  = Reset;
 FCC_Enable.d   = !Port_A1.io;
-FCC_Enable.ck  = Conf_Clk_En & IO1_good & Write & Phi2;
+FCC_Enable.ck  = (Conf_Clk_En # nIO1_good # (nWrite & Phi2));
 
-Conf_Clk_En.ap = Reset;
-Conf_Clk_En.d  = 'b'1;
-Conf_Clk_En.ck = Conf_Clk_En & IO1_good & Write & Phi2;
+Conf_Clk_En.ar = Reset;
+Conf_Clk_En.d  = 'b'0; /* naechstes PCB-Update: Port_A7 */ 
+Conf_Clk_En.ck = (Conf_Clk_En # nIO1_good # (nWrite & Phi2));
 
 
 /* Transfer-Ports */
 
 /* FCC-Empfangsregister = C64-Senderegister */
 [Port_B0..7].d   = [Port_A0..7].io;
-[Port_B0..7].ck  = IO2_good & Write & Phi2;
-[Port_B0..7].oe  = PortADDR & intRead & intPhi2;
+[Port_B0..7].ck  = nIO2_good # (nWrite & Phi2);
+[Port_B0..7].oe  = PortADDR & !intWrite & intPhi2;
 
 /* C64-Empfangsregister = FCC-Senderegister */
+
 [Port_A0..7].d   = [Port_B0..7].io;
-[Port_A0..7].ck  = PortADDR & intWrite & intPhi2;
-[Port_A0..7].oe  = IO2_good & Read & Phi2;
-
-
+[Port_A0..7].ck  = (!PortADDR # (nIntWrite & intPhi2));
+[Port_A0..7].oe  = Phi2 & !(nIO2_good # !nWrite);

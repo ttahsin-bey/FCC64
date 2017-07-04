@@ -1,7 +1,7 @@
 Name            FCC-CPLD;
 Partno          FCC001;
 Revision        01;
-Date            07/02/17;
+Date            07/04/17;
 Designer        Freak;
 Company         None;
 Location        None;
@@ -47,19 +47,19 @@ nIntWrite = !intWrite;
 
 Pin 23  = !Reset;
 
-Pin 21  = nIO1;
-Pin 19  = nIO2;
-Pin 25  = nRomH;
-Pin 48  = nRomL;
+Pin 21  = !IO1;
+Pin 19  = !IO2;
+Pin 25  = !RomH;
+Pin 48  = !RomL;
 Pin 87  = Phi2;
 Pin 90  = DotClk;
-Pin 41  = nWrite;
+Pin 41  = RW;
 Pin 42  = FCC_On;
 
 /* Bidirektionaler Transfer-Port */
 
-Pin [60,63,65,64,61,58,57,56] = [Port_A0..7];
-Pin [29,30,31,32,33,35,36,37] = [Port_B0..7];
+Pin [60,63,65,64,61,58,57,56] = [Port_B0..7];
+Pin [29,30,31,32,33,35,36,37] = [Port_A0..7];
 
 
 /*
@@ -68,10 +68,10 @@ Pin [29,30,31,32,33,35,36,37] = [Port_B0..7];
 
 /* C64 Ausgaenge */
 
-Pin 47  = !FCC_Enable;
+Pin 47  = FCC_Enable;
 Pin 52  = ROM1_Bank;
 Pin 54  = !ROM1_CE;
-Pin 45  = !Rdy_PortA;
+Pin 45  = !Rdy_PortB;
 
 /* FCC Ausgaenge */
 
@@ -83,7 +83,7 @@ Pin 16  = !intNMI;
 
 
 
-NODE  Conf_Clk_En;
+NODE  ConfReg_Clk_Disable;
 Pin 14 = Dummy; /* Test-Pin */
 
 NODE  PortADDR;
@@ -99,29 +99,29 @@ PortADDR = intADDR:[7Fxx];
 
 /* Signalaufbereitung */
 
-NODE  nIO1_DelA;
-NODE  nIO1_DelB;
-NODE  nIO1_good;
-nIO1_DelA.d       = nIO1;
-nIO1_DelA.ck      = DotClk;
-nIO1_DelB.d       = nIO1_DelA;
-nIO1_DelB.ck      = DotClk;
-nIO1_good         = (nIO1 # nIO1_DelA # nIO1_DelB);
+NODE  IO1_DelA;
+NODE  IO1_DelB;
+NODE  IO1_good;
+IO1_DelA.d       = IO1;
+IO1_DelA.ck      = DotClk;
+IO1_DelB.d       = IO1_DelA;
+IO1_DelB.ck      = DotClk;
+IO1_good         = !(IO1 & IO1_DelA & IO1_DelB);
 
 
-NODE  nIO2_DelA;
-NODE  nIO2_DelB;
-NODE  nIO2_good;
-nIO2_DelA.d       = nIO2;
-nIO2_DelA.ck      = DotClk;
-nIO2_DelB.d       = nIO2_DelA;
-nIO2_DelB.ck      = DotClk;
-nIO2_good         = (nIO2 # nIO2_DelA # nIO2_DelB);
+NODE  IO2_DelA;
+NODE  IO2_DelB;
+NODE  IO2_good;
+IO2_DelA.d       = IO2;
+IO2_DelA.ck      = DotClk;
+IO2_DelB.d       = IO2_DelA;
+IO2_DelB.ck      = DotClk;
+IO2_good         = !(IO2 & IO2_DelA & IO2_DelB);
 
 
 /* Ansteuerung des ROM1 (C64-ROM) */
 
-ROM1_CE = FCC_Enable & !(nRomH & nRomL);
+ROM1_CE = !FCC_Enable & (RomH # RomL);
 
 /* Ansteuerung des ROM2 (FCC-ROM) */
 
@@ -146,43 +146,46 @@ MEM_WE  = intWrite & intPhi2;
 /* NMI-Request fuer FCC-interne CPU */
 
 intNMI.ar      = Reset;
-intNMI.ap      = (!nIO2_good & !nWrite & Phi2);
+intNMI.ap      = (!IO2_good & !RW & Phi2);
 intNMI.d       = 'b'0;
-intNMI.ck      = PortADDR & !intWrite & intPhi2;
+intNMI.ck      = !(PortADDR & !intWrite & intPhi2);
+
 
 /* NMI-Request fuer C64 */
 
-Rdy_PortA.ar   = Reset;
-Rdy_PortA.ap   = PortADDR & intWrite & intPhi2;
-Rdy_PortA.d    = 'b'0;
-Rdy_PortA.ck   = nIO2_good # (!nWrite & Phi2);
+Rdy_PortB.ar   = Reset;
+Rdy_PortB.ap   = PortADDR & intWrite & intPhi2;
+Rdy_PortB.d    = 'b'0;
+Rdy_PortB.ck   = IO2_good # (!RW & Phi2);
 
 
 
 /* Konfiguration-Register */
 
-ROM1_Bank.ar   = Reset;
-ROM1_Bank.d    = Port_A0.io;
-ROM1_Bank.ck   = (Conf_Clk_En # nIO1_good # (nWrite & Phi2));
+ROM1_Bank.ar           = Reset;
+ROM1_Bank.d            = Port_B0.io;
+ROM1_Bank.ck           = (ConfReg_Clk_Disable # IO1_good # (RW & Phi2));
 
-FCC_Enable.ap  = Reset;
-FCC_Enable.d   = !Port_A1.io;
-FCC_Enable.ck  = (Conf_Clk_En # nIO1_good # (nWrite & Phi2));
+FCC_Enable.ar          = Reset;
+FCC_Enable.d           = Port_B1.io;
+FCC_Enable.ck          = (ConfReg_Clk_Disable # IO1_good # (RW & Phi2));
 
-Conf_Clk_En.ar = Reset;
-Conf_Clk_En.d  = 'b'0; /* naechstes PCB-Update: Port_A7 */ 
-Conf_Clk_En.ck = (Conf_Clk_En # nIO1_good # (nWrite & Phi2));
+ConfReg_Clk_Disable.ar = Reset;
+ConfReg_Clk_Disable.d  = 'b'0; /* naechstes PCB-Update: Port_B7 */ 
+ConfReg_Clk_Disable.ck = (ConfReg_Clk_Disable # IO1_good # (RW & Phi2));
+
 
 
 /* Transfer-Ports */
 
 /* FCC-Empfangsregister = C64-Senderegister */
-[Port_B0..7].d   = [Port_A0..7].io;
-[Port_B0..7].ck  = nIO2_good # (nWrite & Phi2);
-[Port_B0..7].oe  = PortADDR & !intWrite & intPhi2;
+
+[Port_A0..7].d   = [Port_B0..7].io;
+[Port_A0..7].ck  = IO2_good # (RW & Phi2);
+[Port_A0..7].oe  = PortADDR & !intWrite & intPhi2;
 
 /* C64-Empfangsregister = FCC-Senderegister */
 
-[Port_A0..7].d   = [Port_B0..7].io;
-[Port_A0..7].ck  = (!PortADDR # (nIntWrite & intPhi2));
-[Port_A0..7].oe  = Phi2 & !(nIO2_good # !nWrite);
+[Port_B0..7].d   = [Port_A0..7].io;
+[Port_B0..7].ck  = (!PortADDR # (nIntWrite & intPhi2));
+[Port_B0..7].oe  = Phi2 & !(IO2_good # !RW);

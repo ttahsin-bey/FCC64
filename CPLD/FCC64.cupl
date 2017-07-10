@@ -54,11 +54,10 @@ Pin 48  = !RomL;
 Pin 87  = Phi2;
 Pin 90  = DotClk;
 Pin 41  = RW;
-Pin 42  = FCC_On;
 
 /* Bidirektionaler Transfer-Port */
 
-Pin [60,63,65,64,61,58,57,56] = [Port_B0..7];
+Pin [60,63,65,64,61,56,57,58] = [Port_B0..7];
 Pin [29,30,31,32,33,35,36,37] = [Port_A0..7];
 
 
@@ -82,10 +81,7 @@ Pin 83  = !MEM_WE;
 Pin 16  = !intNMI;
 
 
-
 NODE  ConfReg_Clk_Disable;
-Pin 14 = Dummy; /* Test-Pin */
-
 NODE  PortADDR;
 
 /*

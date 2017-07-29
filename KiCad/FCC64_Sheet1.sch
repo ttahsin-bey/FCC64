@@ -545,8 +545,8 @@ Text GLabel 5075 6650 2    40   Output ~ 0
 ~ROM1_CE
 Wire Wire Line
 	5075 6450 4900 6450
-Text Notes 8350 1225 0    60   ~ 0
-JTAG-Anschluss
+Text Notes 8075 1225 0    60   ~ 0
+Power Supply & JTAG-Port
 Text Label 3975 5450 2    31   ~ 0
 ~I/O1
 Text Label 3975 5550 2    31   ~ 0
@@ -1044,7 +1044,7 @@ L C_Small C2
 U 1 1 590B49DE
 P 2175 1100
 F 0 "C2" H 2185 1170 40  0000 L CNN
-F 1 "4µ7" H 2185 1020 40  0000 L CNN
+F 1 "10µ" H 2185 1020 40  0000 L CNN
 F 2 "TTB_MyLib:TTB_C1206" H 2175 1100 50  0001 C CNN
 F 3 "" H 2175 1100 50  0000 C CNN
 	1    2175 1100
@@ -1055,7 +1055,7 @@ L C_Small C1
 U 1 1 590B4CE7
 P 1675 1100
 F 0 "C1" H 1685 1170 40  0000 L CNN
-F 1 "4µ7" H 1685 1020 40  0000 L CNN
+F 1 "10µ" H 1685 1020 40  0000 L CNN
 F 2 "TTB_MyLib:TTB_C1206" H 1675 1100 50  0001 C CNN
 F 3 "" H 1675 1100 50  0000 C CNN
 	1    1675 1100
@@ -1083,9 +1083,9 @@ Wire Wire Line
 Connection ~ 1875 1100
 Text Notes 8250 5125 0    60   ~ 0
 Configuration-Switches
-Text GLabel 7875 5475 0    40   Output ~ 0
-SW-RAMSIZE
 Text GLabel 7875 5675 0    40   Output ~ 0
+SW-RAMSIZE
+Text GLabel 7875 5475 0    40   Output ~ 0
 SW-CLKB
 Text GLabel 7875 5575 0    40   Output ~ 0
 SW-CLKA
@@ -1100,8 +1100,6 @@ F 3 "" H 8000 5025 50  0000 C CNN
 	1    8000 5025
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	7875 5475 8350 5475
 Wire Wire Line
 	7875 5575 8350 5575
 $Comp
@@ -1123,17 +1121,14 @@ Connection ~ 9250 5575
 Wire Wire Line
 	9250 5675 9075 5675
 Connection ~ 9250 5675
-Text Notes 9325 5500 0    40   ~ 0
+Text Notes 9325 5700 0    40   ~ 0
 8k/32k RAM
-Text Notes 9325 5650 0    40   ~ 0
+Text Notes 9325 5550 0    40   ~ 0
 Clock-Speed
 Wire Wire Line
 	7875 5675 8350 5675
 Wire Wire Line
 	8000 5125 8000 5025
-Wire Wire Line
-	8000 5325 8000 5475
-Connection ~ 8000 5475
 $Comp
 L ATF1504-RESCUE-FCC64 U2
 U 3 1 595BDF95
@@ -1150,13 +1145,13 @@ $EndComp
 $Comp
 L DIP-Switch_3fach S1
 U 1 1 59624767
-P 8725 5575
-F 0 "S1" H 8725 5825 50  0000 C CNN
-F 1 "DIP-Switch" H 8725 5350 50  0000 C CNN
-F 2 "TTB_MyLib:TTB_DIPSwitch3" H 8700 5575 50  0001 C CNN
-F 3 "" H 8700 5575 50  0000 C CNN
-	1    8725 5575
-	1    0    0    -1  
+P 8700 5575
+F 0 "S1" H 8700 5825 50  0000 C CNN
+F 1 "DIP-Switch" H 8700 5350 50  0000 C CNN
+F 2 "TTB_MyLib:TTB_DIPSwitch3" H 8675 5575 50  0001 C CNN
+F 3 "" H 8675 5575 50  0000 C CNN
+	1    8700 5575
+	-1   0    0    -1  
 $EndComp
 Wire Wire Line
 	9250 5475 9250 5750
@@ -1182,4 +1177,9 @@ F 3 "" H 4450 5950 60  0000 C CNN
 	1    4450 6150
 	1    0    0    -1  
 $EndComp
+Wire Wire Line
+	7875 5475 8350 5475
+Wire Wire Line
+	8000 5325 8000 5675
+Connection ~ 8000 5675
 $EndSCHEMATC

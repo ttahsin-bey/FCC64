@@ -1,7 +1,7 @@
 Name            FCC-CPLD;
-Partno          FCC001;
+Partno          U2;
 Revision        01;
-Date            07/04/17;
+Date            07/29/17;
 Designer        Freak;
 Company         None;
 Location        None;
@@ -10,7 +10,7 @@ Device          f1504isptqfp100;
 
 /****************************************************************/
 /*                                                              */
-/*      Logik fuer die "Final Chess Card"                       */
+/*   Logic-Equations for "Final Chess Card (Forum64-Edition)"   */
 /*                                                              */
 /****************************************************************/
 
@@ -28,10 +28,10 @@ PROPERTY ATMEL {CASCADE_LOGIC = ON};
 
 
 /*
- * Definition der Eingaenge ins CPLD
+ * Definition of CPLD-Inputs 
  */
 
-/* FCC Eingaenge */
+/* FCC Inputs */
 
 Pin [100,99,98,97,96,94,93,92] = [intA8..15];
 
@@ -43,7 +43,7 @@ Pin 10  = !intWrite;
 NODE nIntWrite;
 nIntWrite = !intWrite;
 
-/* C64 Eingaenge */
+/* C64 Inputs */
 
 Pin 23  = !Reset;
 
@@ -55,24 +55,24 @@ Pin 87  = Phi2;
 Pin 90  = DotClk;
 Pin 41  = RW;
 
-/* Bidirektionaler Transfer-Port */
+/* Bidirectional Transfer-Port */
 
 Pin [60,63,65,64,61,56,57,58] = [Port_B0..7];
 Pin [29,30,31,32,33,35,36,37] = [Port_A0..7];
 
 
 /*
- * Definition der Ausgaenge des CPLD
+ * Definition of CPLD-Outputs
  */
 
-/* C64 Ausgaenge */
+/* C64 Outputs */
 
 Pin 47  = FCC_Enable;
 Pin 52  = ROM1_Bank;
 Pin 54  = !ROM1_CE;
 Pin 45  = !Rdy_PortB;
 
-/* FCC Ausgaenge */
+/* FCC Outputs */
 
 Pin 80  = !ROM2_CE;
 Pin 79  = !RAM_SEL;
@@ -85,7 +85,7 @@ NODE  ConfReg_Clk_Disable;
 NODE  PortADDR;
 
 /*
- * Logik
+ * Logic
  */
 
 FIELD intADDR = [intA15..intA8];
@@ -93,7 +93,7 @@ FIELD intADDR = [intA15..intA8];
 PortADDR = intADDR:[7Fxx];
 
 
-/* Signalaufbereitung */
+/* Signalconditioning */
 
 NODE  IO1_DelA;
 NODE  IO1_DelB;
@@ -115,31 +115,31 @@ IO2_DelB.ck      = DotClk;
 IO2_good         = !(IO2 & IO2_DelA & IO2_DelB);
 
 
-/* Ansteuerung des ROM1 (C64-ROM) */
+/* Control of ROM1 (C64-ROM) */
 
 ROM1_CE = !FCC_Enable & (RomH # RomL);
 
-/* Ansteuerung des ROM2 (FCC-ROM) */
+/* Control of ROM2 (FCC-ROM) */
 
 ROM2_CE = intADDR:[8000..FFFF];
 
 
-/* Ansteuerung des RAMs */
+/* Control of RAM */
 
 RAM_SEL = intADDR:[0000..1FFF] &  RAM_Size
         # intADDR:[0000..7EFF] & !RAM_Size;
 
 
-/* FCC-interner Speicherzugriff: Lesen */
+/* FCC-internal memory access: Read */
 
 MEM_OE  = !intWrite & intPhi2;
 
-/* FCC-interner Speicherzugriff: Schreiben */
+/* FCC-internal memory access: Write */
 
 MEM_WE  = intWrite & intPhi2;
 
 
-/* NMI-Request fuer FCC-interne CPU */
+/* NMI-Request for FCC-internal CPU */
 
 intNMI.ar      = Reset;
 intNMI.ap      = (!IO2_good & !RW & Phi2);
@@ -147,7 +147,7 @@ intNMI.d       = 'b'0;
 intNMI.ck      = !(PortADDR & !intWrite & intPhi2);
 
 
-/* NMI-Request fuer C64 */
+/* NMI-Request for C64 */
 
 Rdy_PortB.ar   = Reset;
 Rdy_PortB.ap   = PortADDR & intWrite & intPhi2;
@@ -156,7 +156,7 @@ Rdy_PortB.ck   = IO2_good # (!RW & Phi2);
 
 
 
-/* Konfiguration-Register */
+/* Configuration-Register */
 
 ROM1_Bank.ar           = Reset;
 ROM1_Bank.d            = Port_B0.io;
@@ -167,21 +167,22 @@ FCC_Enable.d           = Port_B1.io;
 FCC_Enable.ck          = (ConfReg_Clk_Disable # IO1_good # (RW & Phi2));
 
 ConfReg_Clk_Disable.ar = Reset;
-ConfReg_Clk_Disable.d  = 'b'0; /* naechstes PCB-Update: Port_B7 */ 
+ConfReg_Clk_Disable.d  = Port_B7.io;
 ConfReg_Clk_Disable.ck = (ConfReg_Clk_Disable # IO1_good # (RW & Phi2));
 
 
 
 /* Transfer-Ports */
 
-/* FCC-Empfangsregister = C64-Senderegister */
+/* FCC-Receive-Register = C64-Transmit-Register */
 
 [Port_A0..7].d   = [Port_B0..7].io;
 [Port_A0..7].ck  = IO2_good # (RW & Phi2);
 [Port_A0..7].oe  = PortADDR & !intWrite & intPhi2;
 
-/* C64-Empfangsregister = FCC-Senderegister */
+/* C64-Receive-Register = FCC-Transmit-Register */
 
 [Port_B0..7].d   = [Port_A0..7].io;
 [Port_B0..7].ck  = (!PortADDR # (nIntWrite & intPhi2));
 [Port_B0..7].oe  = Phi2 & !(IO2_good # !RW);
+

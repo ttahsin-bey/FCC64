@@ -62,4 +62,4 @@ Bat1	CR2032		n.a.	Varta CR 2032		Reichlt	CR 2032 VAR
 Bat1'	"-"-Terminal	n.a.	Keystone 2990		Mouser	534-2990
 Bat1'	"+"-Terminal	n.a.	Keystone 3003		Mouser	534-3003
 
-PCB
+PCB	2 Layer, 1.6mm

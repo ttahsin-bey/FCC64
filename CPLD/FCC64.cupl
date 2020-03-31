@@ -1,7 +1,7 @@
-Name            FCC-CPLD;
+Name            FCC64-CPLD;
 Partno          U2;
-Revision        01;
-Date            07/29/17;
+Revision        02;
+Date            03/31/20;
 Designer        Freak;
 Company         None;
 Location        None;
@@ -142,9 +142,9 @@ MEM_WE  = intWrite & intPhi2;
 /* NMI-Request for FCC-internal CPU */
 
 intNMI.ar      = Reset;
-intNMI.ap      = (!IO2_good & !RW & Phi2);
+intNMI.ap      = !IO2_good & !RW & Phi2;
 intNMI.d       = 'b'0;
-intNMI.ck      = !(PortADDR & !intWrite & intPhi2);
+intNMI.ck      = PortADDR & !intWrite & intPhi2;
 
 
 /* NMI-Request for C64 */
@@ -152,7 +152,7 @@ intNMI.ck      = !(PortADDR & !intWrite & intPhi2);
 Rdy_PortB.ar   = Reset;
 Rdy_PortB.ap   = PortADDR & intWrite & intPhi2;
 Rdy_PortB.d    = 'b'0;
-Rdy_PortB.ck   = IO2_good # (!RW & Phi2);
+Rdy_PortB.ck   = !IO2_good & RW & Phi2;
 
 
 
@@ -177,12 +177,12 @@ ConfReg_Clk_Disable.ck = (ConfReg_Clk_Disable # IO1_good # (RW & Phi2));
 /* FCC-Receive-Register = C64-Transmit-Register */
 
 [Port_A0..7].d   = [Port_B0..7].io;
-[Port_A0..7].ck  = IO2_good # (RW & Phi2);
+[Port_A0..7].ck  = !IO2_good & !RW & Phi2;
 [Port_A0..7].oe  = PortADDR & !intWrite & intPhi2;
 
 /* C64-Receive-Register = FCC-Transmit-Register */
 
 [Port_B0..7].d   = [Port_A0..7].io;
-[Port_B0..7].ck  = (!PortADDR # (nIntWrite & intPhi2));
+[Port_B0..7].ck  = PortADDR & MEM_WE;
 [Port_B0..7].oe  = Phi2 & !(IO2_good # !RW);
 
